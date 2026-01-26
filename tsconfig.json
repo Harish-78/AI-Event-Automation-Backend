@@ -1,11 +1,25 @@
 {
   "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
     "module": "CommonJS",
-    "moduleResolution": "node",
     "target": "ES2020",
-    "rootDir": "src",
-    "outDir": "dist",
+    "lib": ["ES2020"],
+    "types": ["node", "express"], 
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "esModuleInterop": true,
-    "strict": true
-  }
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

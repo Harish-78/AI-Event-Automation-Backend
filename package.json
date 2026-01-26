@@ -2,15 +2,19 @@
   "name": "ai-event-automation-backend",
   "version": "1.0.0",
   "private": true,
+  "type": "commonjs",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@types/pg": "^8.16.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "nodemon": "^3.1.11",
+    "pg": "^8.17.2",
     "pino": "^10.2.1",
     "pino-http": "^11.0.0"
   },
