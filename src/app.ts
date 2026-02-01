@@ -18,7 +18,6 @@ app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:5173", cred
 app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());
-app.use(pinoHttp({ logger }));
 
 app.get("/", async (_req: Request, res: Response) => {
   try {

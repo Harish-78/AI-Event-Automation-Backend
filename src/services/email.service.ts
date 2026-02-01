@@ -1,10 +1,8 @@
-import nodemailer from "nodemailer";
+import nodemailer, { Transporter } from "nodemailer";
 import { logger } from "../logger/logger";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
-  secure: process.env.SMTP_SECURE === "true",
+const transporter: Transporter = nodemailer.createTransport({
+  service: "gmail",
   auth: process.env.SMTP_USER
     ? {
         user: process.env.SMTP_USER,
@@ -16,9 +14,10 @@ const transporter = nodemailer.createTransport({
 export async function sendVerificationEmail(
   to: string,
   name: string,
-  verificationUrl: string
+  verificationUrl: string,
 ): Promise<void> {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
+  const from =
+    process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
   const html = `
     <h2>Verify your email</h2>
     <p>Hi ${name || "there"},</p>
