@@ -1,6 +1,6 @@
 const COOKIE_NAME = "token";
 const MAX_AGE_DAYS = 7;
-const MAX_AGE_MS = MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+const MAX_AGE_MS = MAX_AGE_DAYS * 24 * 60 * 60 * 1000;  // 7 days in milliseconds
 
 export const cookieOptions = {
   httpOnly: true,

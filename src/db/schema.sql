@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255),
   google_id VARCHAR(255) UNIQUE,
   email_verified_at TIMESTAMPTZ,
-  role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin','superadmin')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
