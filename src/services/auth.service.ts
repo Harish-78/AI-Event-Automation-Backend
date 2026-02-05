@@ -15,7 +15,7 @@ function signToken(payload: { sub: string; email: string; role: string }): strin
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const VERIFICATION_EXPIRY_HOURS = 24;
 
-function toUser(row: UserRow): User {
+export function toUser(row: UserRow): User {
   return {
     id: row.id,
     email: row.email,
@@ -23,6 +23,7 @@ function toUser(row: UserRow): User {
     google_id: row.google_id,
     email_verified_at: row.email_verified_at,
     role: row.role,
+    college_id: row.college_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };

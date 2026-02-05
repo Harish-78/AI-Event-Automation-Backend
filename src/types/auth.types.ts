@@ -5,6 +5,7 @@ export interface User {
   google_id: string | null;
   email_verified_at: string | null;
   role: string;
+  college_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -17,6 +18,7 @@ export interface UserRow {
   google_id: string | null;
   email_verified_at: string | null;
   role: string;
+  college_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +47,7 @@ declare global {
       google_id: string | null;
       email_verified_at: string | null;
       role: string;
+      college_id: string | null;
       created_at: string;
       updated_at: string;
     }

@@ -11,10 +11,19 @@ import authRouter from "./routes/auth.route";
 import { logger } from "./logger/logger";
 import pool from "./config/db.config";
 import passport from "passport";
+import userRouter from "./routes/user.routes";
+import collegeRouter from "./routes/college.routes";
+import departmentRouter from "./routes/department.routes";
+import eventRouter from "./routes/event.routes";
 
 const app = express();
 
-app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:5173", credentials: true }));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(passport.initialize());
@@ -32,5 +41,13 @@ app.get("/", async (_req: Request, res: Response) => {
 
 app.use("/api", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/users", userRouter);
+app.use("/api/colleges", collegeRouter);
+app.use("/api/departments", departmentRouter);
+app.use("/api/events", eventRouter);
+
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ error: "Not found" });
+});
 
 export default app;
