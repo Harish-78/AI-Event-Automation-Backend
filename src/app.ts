@@ -40,6 +40,10 @@ app.get("/", async (_req: Request, res: Response) => {
   }
 });
 
+app.get("/status", (_req: Request, res: Response) => {
+  res.status(200).json({ status: "running", timestamp: new Date().toISOString() });
+});
+
 app.use("/api", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
