@@ -45,6 +45,7 @@ export interface Event {
   created_at: string;
   updated_at: string;
 }
+<<<<<<< HEAD
 
 export interface EventRegistration {
   id: string;
@@ -54,3 +55,5 @@ export interface EventRegistration {
   registered_at: string;
   cancelled_at: string | null;
 }
+=======
+>>>>>>> origin/main

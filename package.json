@@ -7,9 +7,13 @@
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/server.js",
+<<<<<<< HEAD
     "db:schema": "npx ts-node src/scripts/run-schema.ts",
     "db:seed-superadmin": "npx ts-node src/scripts/seed-superadmin.ts",
     "db:migrate": "npx ts-node src/scripts/migrate.ts"
+=======
+    "db:schema": "npx ts-node src/scripts/run-schema.ts"
+>>>>>>> origin/main
   },
   "dependencies": {
     "@types/pg": "^8.16.0",
