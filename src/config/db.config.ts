@@ -5,13 +5,22 @@ dotenv.config();
 
 const { Pool } = pkg;
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
-  database: process.env.DB_NAME,
-});
+if (!process.env.DATABASE_URL) {
+  logger.error("DATABASE_URL environment variable is missing");
+  process.exit(1);
+}
+
+const poolConfig = {
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+  ssl: {
+    rejectUnauthorized: false, // Required for Supabase/Neon/etc.
+  },
+};
+
+const pool = new Pool(poolConfig);
 
 pool.on("connect", () => {
   logger.info("Connected to the database");
