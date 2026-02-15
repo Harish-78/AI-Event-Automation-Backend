@@ -1,15 +1,20 @@
 import { Request, Response } from "express";
 import * as eventService from "../services/event.service";
+import { AuthRequest } from "../middleware/auth.middleware";
 
 export async function createEvent(req: Request, res: Response): Promise<void> {
-  if (!req.user) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
   try {
+    const authReq = req as AuthRequest;
+    const { id: userId, role, college_id: userCollegeId } = authReq.user!;
+
+    // If admin, force their own college_id
+    if (role === "admin") {
+      req.body.college_id = userCollegeId;
+    }
+
     const event = await eventService.createEvent({
       ...req.body,
-      created_by: req.user.id
+      created_by: userId
     });
     res.status(201).json({ event, message: "Event created successfully" });
   } catch (error) {
@@ -20,7 +25,16 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
 
 export async function getAllEvents(req: Request, res: Response): Promise<void> {
   try {
-    const { college_id, department_id, category, status, search, limit, offset } = req.query;
+    const authReq = req as AuthRequest;
+    const user = authReq.user;
+    
+    let { college_id, department_id, category, status, search, limit, offset } = req.query;
+
+    // If admin, strictly filter by their own college_id
+    if (user?.role === "admin") {
+      college_id = user.college_id as string;
+    }
+
     const result = await eventService.getAllEvents({
       college_id: college_id as string,
       department_id: department_id as string,
@@ -39,17 +53,28 @@ export async function getAllEvents(req: Request, res: Response): Promise<void> {
 
 export async function getEventById(req: Request, res: Response): Promise<void> {
   try {
-    const { id } = req.params;
+    const authReq = req as AuthRequest;
+    const user = authReq.user;
+    const { id: rawId } = req.params;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
     if (!id) {
       res.status(400).json({ error: "Event ID is required" });
       return;
     }
-    const eventId = Array.isArray(id) ? id[0] : id;
-    const event = await eventService.getEventById(eventId!);
+
+    const event = await eventService.getEventById(id);
     if (!event) {
       res.status(404).json({ error: "Event not found" });
       return;
     }
+
+    // Role check: admin can only see their own college's events
+    if (user?.role === "admin" && event.college_id !== user.college_id) {
+      res.status(403).json({ error: "Forbidden: Event belongs to another college" });
+      return;
+    }
+
     res.json({ event });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to retrieve event";
@@ -59,17 +84,33 @@ export async function getEventById(req: Request, res: Response): Promise<void> {
 
 export async function updateEvent(req: Request, res: Response): Promise<void> {
   try {
-    const { id } = req.params;
+    const authReq = req as AuthRequest;
+    const { role, college_id: userCollegeId } = authReq.user!;
+    const { id: rawId } = req.params;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
     if (!id) {
       res.status(400).json({ error: "Event ID is required" });
       return;
     }
-    const eventId = Array.isArray(id) ? id[0] : id;
-    const event = await eventService.updateEvent(eventId!, req.body);
-    if (!event) {
-      res.status(404).json({ error: "Event not found or no updates provided" });
+
+    const existing = await eventService.getEventById(id);
+    if (!existing) {
+      res.status(404).json({ error: "Event not found" });
       return;
     }
+
+    if (role === "admin" && existing.college_id !== userCollegeId) {
+      res.status(403).json({ error: "Forbidden: Event belongs to another college" });
+      return;
+    }
+
+    // Admins cannot change the college_id
+    if (role === "admin") {
+      delete req.body.college_id;
+    }
+
+    const event = await eventService.updateEvent(id, req.body);
     res.json({ event, message: "Event updated successfully" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update event";
@@ -79,17 +120,28 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
 
 export async function deleteEvent(req: Request, res: Response): Promise<void> {
   try {
-    const { id } = req.params;
+    const authReq = req as AuthRequest;
+    const { role, college_id: userCollegeId } = authReq.user!;
+    const { id: rawId } = req.params;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
     if (!id) {
       res.status(400).json({ error: "Event ID is required" });
       return;
     }
-    const eventId = Array.isArray(id) ? id[0] : id;
-    const deleted = await eventService.deleteEvent(eventId!);
-    if (!deleted) {
+
+    const existing = await eventService.getEventById(id);
+    if (!existing) {
       res.status(404).json({ error: "Event not found" });
       return;
     }
+
+    if (role === "admin" && existing.college_id !== userCollegeId) {
+      res.status(403).json({ error: "Forbidden: Event belongs to another college" });
+      return;
+    }
+
+    await eventService.deleteEvent(id);
     res.json({ message: "Event deleted successfully" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete event";
