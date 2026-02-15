@@ -4,11 +4,7 @@ import { setTokenCookie, clearTokenCookie } from "../config/cookie.config";
 
 export async function register(req: Request, res: Response): Promise<void> {
   try {
-<<<<<<< HEAD
     const { email, password, name, inviteToken } = req.body;
-=======
-    const { email, password, name } = req.body;
->>>>>>> origin/main
     if (!email || !password) {
       res.status(400).json({ error: "Email and password are required" });
       return;
@@ -20,12 +16,8 @@ export async function register(req: Request, res: Response): Promise<void> {
     const result = await authService.register(
       email.trim(),
       password,
-<<<<<<< HEAD
       (name || "").trim(),
       inviteToken
-=======
-      (name || "").trim()
->>>>>>> origin/main
     );
     res.status(201).json({
       user: result.user,

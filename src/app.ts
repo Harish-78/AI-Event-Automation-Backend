@@ -1,10 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-<<<<<<< HEAD
-=======
-import pinoHttp from "pino-http";
->>>>>>> origin/main
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -18,11 +14,8 @@ import userRouter from "./routes/user.routes";
 import collegeRouter from "./routes/college.routes";
 import departmentRouter from "./routes/department.routes";
 import eventRouter from "./routes/event.routes";
-<<<<<<< HEAD
 import inviteRouter from "./routes/invite.routes";
 import registrationRouter from "./routes/registration.routes";
-=======
->>>>>>> origin/main
 
 const app = express();
 
@@ -53,11 +46,8 @@ app.use("/api/users", userRouter);
 app.use("/api/colleges", collegeRouter);
 app.use("/api/departments", departmentRouter);
 app.use("/api/events", eventRouter);
-<<<<<<< HEAD
 app.use("/api/invites", inviteRouter);
 app.use("/api/registrations", registrationRouter);
-=======
->>>>>>> origin/main
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });

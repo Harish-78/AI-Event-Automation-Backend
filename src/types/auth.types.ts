@@ -27,10 +27,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   role: string;
-<<<<<<< HEAD
   college_id?: string | null;
-=======
->>>>>>> origin/main
   iat?: number;
   exp?: number;
 }
@@ -42,7 +39,6 @@ export interface GoogleProfile {
   name?: { givenName?: string; familyName?: string };
 }
 
-<<<<<<< HEAD
 export interface InviteToken {
   id: string;
   token: string;
@@ -55,8 +51,6 @@ export interface InviteToken {
   created_at: string;
 }
 
-=======
->>>>>>> origin/main
 declare global {
   namespace Express {
     interface User {

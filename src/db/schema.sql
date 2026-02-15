@@ -94,7 +94,6 @@ CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
 CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
 CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
 
-<<<<<<< HEAD
 -- Invite tokens table (for admin/superadmin signup)
 CREATE TABLE IF NOT EXISTS invite_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -141,5 +140,3 @@ CREATE INDEX IF NOT EXISTS idx_event_registrations_user_id ON event_registration
 --
 -- Or use the seed script: npm run db:seed-superadmin
 -- ============================================================
-=======
->>>>>>> origin/main

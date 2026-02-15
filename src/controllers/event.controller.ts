@@ -7,7 +7,6 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
     return;
   }
   try {
-<<<<<<< HEAD
     const data = { ...req.body, created_by: req.user.id };
     // Admin: force their own college_id
     if (req.user.role === "admin" && req.user.college_id) {
@@ -19,12 +18,6 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
       return;
     }
     const event = await eventService.createEvent(data);
-=======
-    const event = await eventService.createEvent({
-      ...req.body,
-      created_by: req.user.id
-    });
->>>>>>> origin/main
     res.status(201).json({ event, message: "Event created successfully" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create event";
@@ -35,7 +28,6 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
 export async function getAllEvents(req: Request, res: Response): Promise<void> {
   try {
     const { college_id, department_id, category, status, search, limit, offset } = req.query;
-<<<<<<< HEAD
     
     // Admin can only see events from their college
     let filterCollegeId = college_id as string;
@@ -45,10 +37,6 @@ export async function getAllEvents(req: Request, res: Response): Promise<void> {
     
     const result = await eventService.getAllEvents({
       college_id: filterCollegeId,
-=======
-    const result = await eventService.getAllEvents({
-      college_id: college_id as string,
->>>>>>> origin/main
       department_id: department_id as string,
       category: category as string,
       status: status as string,
@@ -91,7 +79,6 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
       return;
     }
     const eventId = Array.isArray(id) ? id[0] : id;
-<<<<<<< HEAD
     
     // Admin can only update events in their college
     if (req.user && req.user.role === "admin" && req.user.college_id) {
@@ -102,8 +89,6 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
       }
     }
     
-=======
->>>>>>> origin/main
     const event = await eventService.updateEvent(eventId!, req.body);
     if (!event) {
       res.status(404).json({ error: "Event not found or no updates provided" });
@@ -124,7 +109,6 @@ export async function deleteEvent(req: Request, res: Response): Promise<void> {
       return;
     }
     const eventId = Array.isArray(id) ? id[0] : id;
-<<<<<<< HEAD
     
     // Admin can only delete events in their college
     if (req.user && req.user.role === "admin" && req.user.college_id) {
@@ -135,8 +119,6 @@ export async function deleteEvent(req: Request, res: Response): Promise<void> {
       }
     }
     
-=======
->>>>>>> origin/main
     const deleted = await eventService.deleteEvent(eventId!);
     if (!deleted) {
       res.status(404).json({ error: "Event not found" });
