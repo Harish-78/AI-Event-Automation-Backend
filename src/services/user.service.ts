@@ -1,4 +1,4 @@
-import pool from "../config/db.config";
+import sql from "../config/db.config";
 import { User, UserRow } from "../types/auth.types";
 import { toUser } from "./auth.service";
 
@@ -12,30 +12,29 @@ export async function updateUser({
   userId: string;
 }): Promise<{ user: User; message: string }> {
   try {
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+    const updateData: any = { updated_at: sql`NOW()` };
+    const columns = ["updated_at"];
 
     if (name) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(name.trim());
+      updateData.name = name.trim();
+      columns.push("name");
     }
-
     if (role) {
-      updates.push(`role = $${paramIndex++}`);
-      values.push(role);
+      updateData.role = role;
+      columns.push("role");
     }
 
-    if (updates.length === 0) {
-      throw new Error("No fields provided for update");
-    }
+    const [row] = await sql<UserRow[]>`
+      UPDATE users SET 
+        ${sql(updateData, columns)}
+      WHERE id = ${userId}
+      RETURNING id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at
+    `;
 
-    values.push(userId);
-    const query = `UPDATE users SET ${updates.join(", ")}, updated_at = NOW() WHERE id = $${paramIndex} RETURNING id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at`;
+    if (!row) throw new Error("User not found or update failed");
 
-    const result = await pool.query<UserRow>(query, values);
     return {
-      user: toUser(result.rows[0]!),
+      user: toUser(row),
       message: "User updated successfully",
     };
   } catch (error) {
@@ -47,10 +46,10 @@ export async function updateUser({
 
 export const getAllUsers = async () => {
   try {
-    const result = await pool.query<UserRow>(
-      "SELECT id, email, name, email_verified_at, role, college_id, created_at, updated_at FROM users",
-    );
-    return result.rows.map(toUser);
+    const users = await sql<UserRow[]>`
+      SELECT id, email, name, email_verified_at, role, college_id, created_at, updated_at FROM users
+    `;
+    return users.map(toUser);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to retrieve users";
@@ -60,10 +59,9 @@ export const getAllUsers = async () => {
 
 export const deleteUserById = async (userId: string) => {
   try {
-    await pool.query(
-      "UPDATE users SET is_deleted = TRUE, updated_at = NOW() WHERE id = $1",
-      [userId],
-    );
+    await sql`
+      UPDATE users SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${userId}
+    `;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to delete user";

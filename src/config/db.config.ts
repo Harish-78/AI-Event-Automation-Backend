@@ -1,34 +1,21 @@
-import pkg from "pg";
+import postgres from "postgres";
 import { logger } from "../logger/logger";
 import dotenv from "dotenv";
-dotenv.config();
 
-const { Pool } = pkg;
+dotenv.config();
 
 if (!process.env.DATABASE_URL) {
   logger.error("DATABASE_URL environment variable is missing");
-  process.exit(1);
 }
 
-const poolConfig = {
-  connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+const sql = postgres(process.env.DATABASE_URL!, {
   ssl: {
     rejectUnauthorized: false, // Required for Supabase/Neon/etc.
   },
-};
-
-const pool = new Pool(poolConfig);
-
-pool.on("connect", () => {
-  logger.info("Connected to the database");
+  max: 1, // Limiting for serverless/Supabase free tier compatibility
+  onnotice: (notice) => logger.info({ notice }, "Database notice"),
 });
 
-pool.on("error", (err: Error) => {
-  logger.error(err, "Unexpected error on idle client");
-  process.exit(-1);
-});
+logger.info("Database client initialized with postgres.js");
 
-export default pool;
+export default sql;

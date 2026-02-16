@@ -1,21 +1,22 @@
-import pool from "../config/db.config";
+import sql from "../config/db.config";
 import type { College } from "../types/entity.types";
 
 export async function createCollege(data: Partial<College>): Promise<College> {
-  const result = await pool.query<College>(
-    `INSERT INTO colleges (
+  const [row] = await sql<College[]>`
+    INSERT INTO colleges (
       name, city, taluka, district, state, zip_code, country, 
       short_name, contact_email, contact_phone, website_url, 
       registration_number, logo_url
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-    RETURNING *`,
-    [
-      data.name, data.city, data.taluka, data.district, data.state, data.zip_code, data.country,
-      data.short_name, data.contact_email, data.contact_phone, data.website_url,
-      data.registration_number, data.logo_url
-    ]
-  );
-  return result.rows[0]!;
+    ) VALUES (
+      ${data.name!}, ${data.city || null}, ${data.taluka || null}, ${data.district || null}, 
+      ${data.state || null}, ${data.zip_code || null}, ${data.country || null},
+      ${data.short_name || null}, ${data.contact_email || null}, ${data.contact_phone || null}, 
+      ${data.website_url || null}, ${data.registration_number || null}, ${data.logo_url || null}
+    )
+    RETURNING *
+  `;
+  if (!row) throw new Error("Insert failed");
+  return row;
 }
 
 export async function getAllColleges(params: {
@@ -24,41 +25,41 @@ export async function getAllColleges(params: {
   offset?: number;
 }): Promise<{ colleges: College[]; total: number }> {
   const { search, limit = 10, offset = 0 } = params;
-  const values: any[] = [];
-  let whereClause = "WHERE is_deleted = FALSE";
+
+  let whereConditions: any[] = [sql`is_deleted = FALSE`];
 
   if (search) {
-    values.push(`%${search.trim().toLowerCase()}%`);
-    whereClause += ` AND (LOWER(name) LIKE $1 OR LOWER(short_name) LIKE $1)`;
+    const searchTerm = `%${search.trim().toLowerCase()}%`;
+    whereConditions.push(sql`(LOWER(name) LIKE ${searchTerm} OR LOWER(short_name) LIKE ${searchTerm})`);
   }
 
-  const countQuery = `SELECT COUNT(*) FROM colleges ${whereClause}`;
-  const totalResult = await pool.query(countQuery, values);
-  const total = parseInt(totalResult.rows[0]!.count, 10);
+  const whereClause = whereConditions.length > 0 ? sql`WHERE ${(sql as any).join(whereConditions, sql` AND `)}` : sql``;
 
-  const query = `
-    SELECT * FROM colleges 
-    ${whereClause} 
-    ORDER BY created_at DESC 
-    LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+  const [totalResult] = await sql<{ count: string }[]>`
+    SELECT COUNT(*) FROM colleges ${whereClause}
   `;
-  const result = await pool.query<College>(query, [...values, limit, offset]);
+  const total = parseInt(totalResult!.count, 10);
 
-  return { colleges: result.rows, total };
+  const colleges = await sql<College[]>`
+    SELECT * FROM colleges
+    ${whereClause}
+    ORDER BY created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+
+  return { colleges, total };
 }
 
 export async function getCollegeById(id: string): Promise<College | null> {
-  const result = await pool.query<College>(
-    "SELECT * FROM colleges WHERE id = $1 AND is_deleted = FALSE",
-    [id]
-  );
-  return result.rows[0] || null;
+  const [college] = await sql<College[]>`
+    SELECT * FROM colleges WHERE id = ${id} AND is_deleted = FALSE
+  `;
+  return college || null;
 }
 
 export async function updateCollege(id: string, data: Partial<College>): Promise<College | null> {
-  const updates: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
+  const updateData: any = { updated_at: sql`NOW()` };
+  const columns: string[] = ["updated_at"];
 
   const allowedFields = [
     "name", "city", "taluka", "district", "state", "zip_code", "country",
@@ -68,28 +69,28 @@ export async function updateCollege(id: string, data: Partial<College>): Promise
 
   for (const field of allowedFields) {
     if (data[field as keyof College] !== undefined) {
-      updates.push(`${field} = $${paramIndex++}`);
-      values.push(data[field as keyof College]);
+      updateData[field] = data[field as keyof College];
+      columns.push(field);
     }
   }
 
-  if (updates.length === 0) return null;
+  if (columns.length === 1 && columns[0] === "updated_at") {
+    return await getCollegeById(id);
+  }
 
-  values.push(id);
-  const query = `
-    UPDATE colleges 
-    SET ${updates.join(", ")}, updated_at = NOW() 
-    WHERE id = $${paramIndex} AND is_deleted = FALSE 
+  const [row] = await sql<College[]>`
+    UPDATE colleges SET
+      ${(sql as any)(updateData, columns)}
+    WHERE id = ${id} AND is_deleted = FALSE
     RETURNING *
   `;
-  const result = await pool.query<College>(query, values);
-  return result.rows[0] || null;
+
+  return row || null;
 }
 
 export async function deleteCollege(id: string): Promise<boolean> {
-  const result = await pool.query(
-    "UPDATE colleges SET is_deleted = TRUE, updated_at = NOW() WHERE id = $1",
-    [id]
-  );
-  return (result.rowCount ?? 0) > 0;
+  const result = await sql`
+    UPDATE colleges SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${id}
+  `;
+  return result.count > 0;
 }

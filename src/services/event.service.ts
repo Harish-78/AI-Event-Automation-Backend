@@ -1,21 +1,21 @@
-import pool from "../config/db.config";
+import sql from "../config/db.config";
 import type { Event } from "../types/entity.types";
 
 export async function createEvent(data: Partial<Event>): Promise<Event> {
-  const result = await pool.query<Event>(
-    `INSERT INTO events (
+  const [row] = await sql<Event[]>`
+    INSERT INTO events (
       title, description, college_id, department_id, category, 
       start_time, end_time, location, registration_deadline, 
       max_participants, created_by, status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-    RETURNING *`,
-    [
-      data.title, data.description, data.college_id, data.department_id, data.category,
-      data.start_time, data.end_time, data.location, data.registration_deadline,
-      data.max_participants, data.created_by, data.status || 'draft'
-    ]
-  );
-  return result.rows[0]!;
+    ) VALUES (
+      ${data.title!}, ${data.description || null}, ${data.college_id!}, ${data.department_id || null}, ${data.category!},
+      ${data.start_time!}, ${data.end_time!}, ${data.location || null}, ${data.registration_deadline || null},
+      ${data.max_participants || null}, ${data.created_by!}, ${data.status || 'draft'}
+    )
+    RETURNING *
+  `;
+  if (!row) throw new Error("Insert failed");
+  return row;
 }
 
 export async function getAllEvents(params: {
@@ -28,61 +28,52 @@ export async function getAllEvents(params: {
   offset?: number;
 }): Promise<{ events: Event[]; total: number }> {
   const { college_id, department_id, category, status, search, limit = 10, offset = 0 } = params;
-  const values: any[] = [];
-  let whereClause = "WHERE is_deleted = FALSE";
+  const conditions: any[] = [sql`is_deleted = FALSE`];
 
   if (college_id) {
-    values.push(college_id);
-    whereClause += ` AND college_id = $${values.length}`;
+    conditions.push(sql`college_id = ${college_id}`);
   }
-
   if (department_id) {
-    values.push(department_id);
-    whereClause += ` AND department_id = $${values.length}`;
+    conditions.push(sql`department_id = ${department_id}`);
   }
-
   if (category) {
-    values.push(category);
-    whereClause += ` AND category = $${values.length}`;
+    conditions.push(sql`category = ${category}`);
   }
-
   if (status) {
-    values.push(status);
-    whereClause += ` AND status = $${values.length}`;
+    conditions.push(sql`status = ${status}`);
   }
-
   if (search) {
-    values.push(`%${search.trim().toLowerCase()}%`);
-    whereClause += ` AND (LOWER(title) LIKE $${values.length} OR LOWER(description) LIKE $${values.length})`;
+    const searchTerm = `%${search.trim().toLowerCase()}%`;
+    conditions.push(sql`(LOWER(title) LIKE ${searchTerm} OR LOWER(description) LIKE ${searchTerm})`);
   }
 
-  const countQuery = `SELECT COUNT(*) FROM events ${whereClause}`;
-  const totalResult = await pool.query(countQuery, values);
-  const total = parseInt(totalResult.rows[0]!.count, 10);
+  const whereClause = conditions.length > 0 ? sql`WHERE ${(sql as any).join(conditions, sql` AND `)}` : sql``;
 
-  const query = `
+  const [totalResult] = await sql<{ count: string }[]>`
+    SELECT COUNT(*) FROM events ${whereClause}
+  `;
+  const total = parseInt(totalResult!.count, 10);
+
+  const events = await sql<Event[]>`
     SELECT * FROM events 
     ${whereClause} 
     ORDER BY start_time ASC 
-    LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+    LIMIT ${limit} OFFSET ${offset}
   `;
-  const result = await pool.query<Event>(query, [...values, limit, offset]);
 
-  return { events: result.rows, total };
+  return { events, total };
 }
 
 export async function getEventById(id: string): Promise<Event | null> {
-  const result = await pool.query<Event>(
-    "SELECT * FROM events WHERE id = $1 AND is_deleted = FALSE",
-    [id]
-  );
-  return result.rows[0] || null;
+  const [row] = await sql<Event[]>`
+    SELECT * FROM events WHERE id = ${id} AND is_deleted = FALSE
+  `;
+  return row || null;
 }
 
 export async function updateEvent(id: string, data: Partial<Event>): Promise<Event | null> {
-  const updates: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
+  const updateData: any = { updated_at: sql`NOW()` };
+  const columns = ["updated_at"];
 
   const allowedFields = [
     "title", "description", "department_id", "category", 
@@ -92,28 +83,27 @@ export async function updateEvent(id: string, data: Partial<Event>): Promise<Eve
 
   for (const field of allowedFields) {
     if (data[field as keyof Event] !== undefined) {
-      updates.push(`${field} = $${paramIndex++}`);
-      values.push(data[field as keyof Event]);
+      updateData[field] = data[field as keyof Event];
+      columns.push(field);
     }
   }
 
-  if (updates.length === 0) return null;
+  if (columns.length === 1 && columns[0] === "updated_at") {
+    return await getEventById(id);
+  }
 
-  values.push(id);
-  const query = `
-    UPDATE events 
-    SET ${updates.join(", ")}, updated_at = NOW() 
-    WHERE id = $${paramIndex} AND is_deleted = FALSE 
+  const [row] = await sql<Event[]>`
+    UPDATE events SET 
+      ${(sql as any)(updateData, columns)}
+    WHERE id = ${id} AND is_deleted = FALSE 
     RETURNING *
   `;
-  const result = await pool.query<Event>(query, values);
-  return result.rows[0] || null;
+  return row || null;
 }
 
 export async function deleteEvent(id: string): Promise<boolean> {
-  const result = await pool.query(
-    "UPDATE events SET is_deleted = TRUE, updated_at = NOW() WHERE id = $1",
-    [id]
-  );
-  return (result.rowCount ?? 0) > 0;
+  const result = await sql`
+    UPDATE events SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${id}
+  `;
+  return result.count > 0;
 }

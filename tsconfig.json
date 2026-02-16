@@ -5,11 +5,17 @@
     "module": "CommonJS",
     "target": "ES2020",
     "lib": ["ES2020"],
-    "types": ["node", "express"], 
+    
+    // REMOVE or COMMENT OUT the line below so TS finds types for cors, passport, etc.
+    // "types": ["node", "express"], 
+
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "sourceMap": true,
-    "declaration": true,
+    
+    // You don't really need declaration files for a backend app, but it won't hurt
+    "declaration": true, 
     "declarationMap": true,
+    
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,

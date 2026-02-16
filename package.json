@@ -25,6 +25,7 @@
     "pg": "^8.17.2",
     "pino": "^10.2.1",
     "pino-http": "^11.0.0",
+    "postgres": "^3.4.8",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
