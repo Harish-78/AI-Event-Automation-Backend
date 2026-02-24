@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import sql from "../config/db.config";
 import { logger } from "../logger/logger";
 import type { User, UserRow } from "../types/auth.types";
-import { sendVerificationEmail } from "./email.service";
+import { sendVerificationEmail, sendPasswordResetEmail } from "./email.service";
 
 const JWT_SECRET = process.env.JWT_SECRET || "change-me-in-production";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -14,6 +14,7 @@ function signToken(payload: { sub: string; email: string; role: string }): strin
 }
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const VERIFICATION_EXPIRY_HOURS = 24;
+const PASSWORD_RESET_EXPIRY_HOURS = 1;
 
 export function toUser(row: UserRow): User {
   return {
@@ -189,4 +190,51 @@ export async function getUserById(id: string): Promise<User | null> {
     FROM users WHERE id = ${id}
   `;
   return row ? toUser(row) : null;
+}
+
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const [row] = await sql<UserRow[]>`
+    SELECT id, email, name FROM users WHERE email = ${email.toLowerCase()}
+  `;
+  if (!row) {
+    // We return a generic message to avoid email enumeration
+    return { message: "If an account exists with this email, you will receive a password reset link shortly." };
+  }
+  
+  // Delete any existing tokens for this user
+  await sql`DELETE FROM password_reset_tokens WHERE user_id = ${row.id}`;
+  
+  const token = uuidv4();
+  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRY_HOURS * 60 * 60 * 1000);
+  
+  await sql`
+    INSERT INTO password_reset_tokens (user_id, token, expires_at) 
+    VALUES (${row.id}, ${token}, ${expiresAt})
+  `;
+  
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+  await sendPasswordResetEmail(row.email, row.name || "User", resetUrl);
+  
+  return { message: "If an account exists with this email, you will receive a password reset link shortly." };
+}
+
+export async function resetPassword(token: string, password: string): Promise<{ message: string }> {
+  const [tokenData] = await sql<{ user_id: string; expires_at: string }[]>`
+    SELECT user_id, expires_at FROM password_reset_tokens WHERE token = ${token}
+  `;
+  
+  if (!tokenData) {
+    throw new Error("Invalid or expired reset token");
+  }
+  
+  if (new Date(tokenData.expires_at) < new Date()) {
+    await sql`DELETE FROM password_reset_tokens WHERE token = ${token}`;
+    throw new Error("Reset token has expired");
+  }
+  
+  const passwordHash = await bcrypt.hash(password, 12);
+  await sql`UPDATE users SET password_hash = ${passwordHash}, updated_at = NOW() WHERE id = ${tokenData.user_id}`;
+  await sql`DELETE FROM password_reset_tokens WHERE token = ${token}`;
+  
+  return { message: "Password has been reset successfully. You can now log in with your new password." };
 }
