@@ -16,6 +16,7 @@ export async function sendVerificationEmail(
   name: string,
   verificationUrl: string,
 ): Promise<void> {
+  logger.info({ to }, "EmailService: sendVerificationEmail - Init");
   const from =
     process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
   const html = `
@@ -33,7 +34,7 @@ export async function sendVerificationEmail(
       subject: "Verify your email - Event Automation",
       html,
     });
-    logger.info({ to }, "Verification email sent");
+    logger.info({ to }, "EmailService: sendVerificationEmail - Completion");
   } catch (err) {
     logger.error({ err, to }, "Failed to send verification email");
     throw err;

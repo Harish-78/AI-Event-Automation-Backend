@@ -1,7 +1,9 @@
 import sql from "../config/db.config";
+import { logger } from "../logger/logger";
 import type { Event } from "../types/entity.types";
 
 export async function createEvent(data: Partial<Event>): Promise<Event> {
+  logger.info({ title: data.title, collegeId: data.college_id }, "EventService: createEvent - Init");
   const [row] = await sql<Event[]>`
     INSERT INTO events (
       title, description, college_id, department_id, category, 
@@ -15,6 +17,7 @@ export async function createEvent(data: Partial<Event>): Promise<Event> {
     RETURNING *
   `;
   if (!row) throw new Error("Insert failed");
+  logger.info({ eventId: row.id }, "EventService: createEvent - Completion");
   return row;
 }
 
@@ -27,6 +30,7 @@ export async function getAllEvents(params: {
   limit?: number;
   offset?: number;
 }): Promise<{ events: Event[]; total: number }> {
+  logger.info(params, "EventService: getAllEvents - Init");
   const { college_id, department_id, category, status, search, limit = 10, offset = 0 } = params;
   const conditions: any[] = [sql`is_deleted = FALSE`];
 
@@ -65,13 +69,17 @@ export async function getAllEvents(params: {
 }
 
 export async function getEventById(id: string): Promise<Event | null> {
+  logger.info({ eventId: id }, "EventService: getEventById - Init");
   const [row] = await sql<Event[]>`
     SELECT * FROM events WHERE id = ${id} AND is_deleted = FALSE
   `;
-  return row || null;
+  const result = row || null;
+  logger.info({ eventId: id, found: !!result }, "EventService: getEventById - Completion");
+  return result;
 }
 
 export async function updateEvent(id: string, data: Partial<Event>): Promise<Event | null> {
+  logger.info({ eventId: id }, "EventService: updateEvent - Init");
   const updateData: any = { updated_at: sql`NOW()` };
   const columns = ["updated_at"];
 
@@ -98,12 +106,16 @@ export async function updateEvent(id: string, data: Partial<Event>): Promise<Eve
     WHERE id = ${id} AND is_deleted = FALSE 
     RETURNING *
   `;
+  logger.info({ eventId: id, success: !!row }, "EventService: updateEvent - Completion");
   return row || null;
 }
 
 export async function deleteEvent(id: string): Promise<boolean> {
+  logger.info({ eventId: id }, "EventService: deleteEvent - Init");
   const result = await sql`
     UPDATE events SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${id}
   `;
-  return result.count > 0;
+  const success = result.count > 0;
+  logger.info({ eventId: id, success }, "EventService: deleteEvent - Completion");
+  return success;
 }

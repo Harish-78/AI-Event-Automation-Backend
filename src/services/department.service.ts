@@ -1,7 +1,9 @@
 import sql from "../config/db.config";
+import { logger } from "../logger/logger";
 import type { Department } from "../types/entity.types";
 
 export async function createDepartment(data: Partial<Department>): Promise<Department> {
+  logger.info({ departmentName: data.name, collegeId: data.college_id }, "DepartmentService: createDepartment - Init");
   const { name, college_id, short_name, contact_email, contact_phone } = data;
   const [row] = await sql<Department[]>`
     INSERT INTO departments (name, college_id, short_name, contact_email, contact_phone)
@@ -9,6 +11,7 @@ export async function createDepartment(data: Partial<Department>): Promise<Depar
     RETURNING *
   `;
   if (!row) throw new Error("Insert failed");
+  logger.info({ departmentId: row.id }, "DepartmentService: createDepartment - Completion");
   return row;
 }
 
@@ -18,6 +21,7 @@ export async function getAllDepartments(params: {
   limit?: number;
   offset?: number;
 }): Promise<{ departments: Department[]; total: number }> {
+  logger.info(params, "DepartmentService: getAllDepartments - Init");
   const { college_id, search, limit = 10, offset = 0 } = params;
   const conditions: any[] = [sql`is_deleted = FALSE`];
 
@@ -48,13 +52,17 @@ export async function getAllDepartments(params: {
 }
 
 export async function getDepartmentById(id: string): Promise<Department | null> {
+  logger.info({ departmentId: id }, "DepartmentService: getDepartmentById - Init");
   const [row] = await sql<Department[]>`
     SELECT * FROM departments WHERE id = ${id} AND is_deleted = FALSE
   `;
-  return row || null;
+  const result = row || null;
+  logger.info({ departmentId: id, found: !!result }, "DepartmentService: getDepartmentById - Completion");
+  return result;
 }
 
 export async function updateDepartment(id: string, data: Partial<Department>): Promise<Department | null> {
+  logger.info({ departmentId: id }, "DepartmentService: updateDepartment - Init");
   const updateData: any = { updated_at: sql`NOW()` };
   const columns = ["updated_at"];
 
@@ -77,13 +85,16 @@ export async function updateDepartment(id: string, data: Partial<Department>): P
     WHERE id = ${id} AND is_deleted = FALSE
     RETURNING *
   `;
-
+  logger.info({ departmentId: id, success: !!row }, "DepartmentService: updateDepartment - Completion");
   return row || null;
 }
 
 export async function deleteDepartment(id: string): Promise<boolean> {
+  logger.info({ departmentId: id }, "DepartmentService: deleteDepartment - Init");
   const result = await sql`
     UPDATE departments SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${id}
   `;
-  return result.count > 0;
+  const success = result.count > 0;
+  logger.info({ departmentId: id, success }, "DepartmentService: deleteDepartment - Completion");
+  return success;
 }

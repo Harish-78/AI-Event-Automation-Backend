@@ -7,7 +7,10 @@
     "lib": ["ES2020"],
     
     // REMOVE or COMMENT OUT the line below so TS finds types for cors, passport, etc.
-    // "types": ["node", "express"], 
+    "types": [
+      "node",
+      "jest"
+    ],
 
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "sourceMap": true,

@@ -1,4 +1,5 @@
 import sql from "../config/db.config";
+import { logger } from "../logger/logger";
 import { User, UserRow } from "../types/auth.types";
 import { toUser } from "./auth.service";
 
@@ -11,6 +12,7 @@ export async function updateUser({
   role?: string;
   userId: string;
 }): Promise<{ user: User; message: string }> {
+  logger.info({ userId }, "UserService: updateUser - Init");
   try {
     const updateData: any = { updated_at: sql`NOW()` };
     const columns = ["updated_at"];
@@ -33,10 +35,12 @@ export async function updateUser({
 
     if (!row) throw new Error("User not found or update failed");
 
-    return {
+    const result = {
       user: toUser(row),
       message: "User updated successfully",
     };
+    logger.info({ userId }, "UserService: updateUser - Completion");
+    return result;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "User update failed";
@@ -45,11 +49,14 @@ export async function updateUser({
 }
 
 export const getAllUsers = async () => {
+  logger.info("UserService: getAllUsers - Init");
   try {
     const users = await sql<UserRow[]>`
       SELECT id, email, name, email_verified_at, role, college_id, created_at, updated_at FROM users
     `;
-    return users.map(toUser);
+    const result = users.map(toUser);
+    logger.info({ count: result.length }, "UserService: getAllUsers - Completion");
+    return result;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to retrieve users";
@@ -58,10 +65,12 @@ export const getAllUsers = async () => {
 };
 
 export const deleteUserById = async (userId: string) => {
+  logger.info({ userId }, "UserService: deleteUserById - Init");
   try {
     await sql`
       UPDATE users SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${userId}
     `;
+    logger.info({ userId }, "UserService: deleteUserById - Completion");
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to delete user";

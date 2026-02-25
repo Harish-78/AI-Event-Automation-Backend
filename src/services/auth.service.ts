@@ -34,6 +34,7 @@ export async function register(
   password: string,
   name: string
 ): Promise<{ user: User; message: string }> {
+  logger.info({ email }, "AuthService: register - Init");
   const [existing] = await sql<UserRow[]>`
     SELECT id FROM users WHERE email = ${email.toLowerCase()}
   `;
@@ -56,6 +57,7 @@ export async function register(
   `;
   const verificationUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
   await sendVerificationEmail(user.email, user.name || "User", verificationUrl);
+  logger.info({ userId: user.id }, "AuthService: register - Completion");
   return { user, message: "Registration successful. Please check your email to verify your account." };
 }
 
@@ -63,6 +65,7 @@ export async function login(
   email: string,
   password: string
 ): Promise<{ user: User; accessToken: string }> {
+  logger.info({ email }, "AuthService: login - Init");
   const [row] = await sql<UserRow[]>`
     SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
     FROM users WHERE email = ${email.toLowerCase()}
@@ -82,10 +85,12 @@ export async function login(
   }
   const user = toUser(row);
   const accessToken = signToken({ sub: user.id, email: user.email, role: user.role });
+  logger.info({ userId: user.id }, "AuthService: login - Completion");
   return { user, accessToken };
 }
 
 export async function verifyEmail(token: string): Promise<{ user: User; accessToken: string }> {
+  logger.info("AuthService: verifyEmail - Init");
   const [tokenData] = await sql<{ user_id: string; expires_at: string }[]>`
     SELECT user_id, expires_at FROM email_verification_tokens WHERE token = ${token}
   `;
@@ -106,10 +111,12 @@ export async function verifyEmail(token: string): Promise<{ user: User; accessTo
   if (!userRow) throw new Error("User not found");
   const user = toUser(userRow);
   const accessToken = signToken({ sub: user.id, email: user.email, role: user.role });
+  logger.info({ userId: user.id }, "AuthService: verifyEmail - Completion");
   return { user, accessToken };
 }
 
 export async function resendVerificationEmail(email: string): Promise<{ message: string }> {
+  logger.info({ email }, "AuthService: resendVerificationEmail - Init");
   const [row] = await sql<UserRow[]>`
     SELECT id, email, name, email_verified_at FROM users WHERE email = ${email.toLowerCase()}
   `;
@@ -128,6 +135,7 @@ export async function resendVerificationEmail(email: string): Promise<{ message:
   `;
   const verificationUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
   await sendVerificationEmail(row.email, row.name || "User", verificationUrl);
+  logger.info({ email }, "AuthService: resendVerificationEmail - Completion");
   return { message: "Verification email sent. Please check your inbox." };
 }
 
@@ -136,6 +144,7 @@ export async function findOrCreateGoogleUser(
   email: string,
   name: string
 ): Promise<{ user: User; accessToken: string }> {
+  logger.info({ email, googleId }, "AuthService: findOrCreateGoogleUser - Init");
   const [existingUser] = await sql<UserRow[]>`
     SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
     FROM users WHERE google_id = ${googleId}
@@ -143,6 +152,7 @@ export async function findOrCreateGoogleUser(
   if (existingUser) {
     const user = toUser(existingUser);
     const accessToken = signToken({ sub: user.id, email: user.email, role: user.role });
+    logger.info({ userId: user.id }, "AuthService: findOrCreateGoogleUser - Completion");
     return { user, accessToken };
   }
   const [existingEmailUser] = await sql<UserRow[]>`
@@ -165,6 +175,7 @@ export async function findOrCreateGoogleUser(
     if (!updatedRow) throw new Error("User not found");
     const user = toUser(updatedRow);
     const accessToken = signToken({ sub: user.id, email: user.email, role: user.role });
+    logger.info({ userId: user.id }, "AuthService: findOrCreateGoogleUser - Completion");
     return { user, accessToken };
   }
   const [insertRow] = await sql<UserRow[]>`
@@ -176,6 +187,7 @@ export async function findOrCreateGoogleUser(
   const user = toUser(insertRow);
   const accessToken = signToken({ sub: user.id, email: user.email, role: user.role });
   logger.info({ userId: user.id, email: user.email }, "New user created via Google");
+  logger.info({ userId: user.id }, "AuthService: findOrCreateGoogleUser - Completion");
   return { user, accessToken };
 }
 
@@ -184,9 +196,12 @@ export function createTokenForUser(user: User): string {
 }
 
 export async function getUserById(id: string): Promise<User | null> {
+  logger.info({ userId: id }, "AuthService: getUserById - Init");
   const [row] = await sql<UserRow[]>`
     SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
     FROM users WHERE id = ${id}
   `;
-  return row ? toUser(row) : null;
+  const result = row ? toUser(row) : null;
+  logger.info({ userId: id, found: !!result }, "AuthService: getUserById - Completion");
+  return result;
 }

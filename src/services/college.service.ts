@@ -1,7 +1,9 @@
 import sql from "../config/db.config";
+import { logger } from "../logger/logger";
 import type { College } from "../types/entity.types";
 
 export async function createCollege(data: Partial<College>): Promise<College> {
+  logger.info({ collegeName: data.name }, "CollegeService: createCollege - Init");
   const [row] = await sql<College[]>`
     INSERT INTO colleges (
       name, city, taluka, district, state, zip_code, country, 
@@ -16,6 +18,7 @@ export async function createCollege(data: Partial<College>): Promise<College> {
     RETURNING *
   `;
   if (!row) throw new Error("Insert failed");
+  logger.info({ collegeId: row.id }, "CollegeService: createCollege - Completion");
   return row;
 }
 
@@ -24,6 +27,7 @@ export async function getAllColleges(params: {
   limit?: number;
   offset?: number;
 }): Promise<{ colleges: College[]; total: number }> {
+  logger.info(params, "CollegeService: getAllColleges - Init");
   const { search, limit = 10, offset = 0 } = params;
 
   let whereConditions: any[] = [sql`is_deleted = FALSE`];
@@ -51,13 +55,17 @@ export async function getAllColleges(params: {
 }
 
 export async function getCollegeById(id: string): Promise<College | null> {
+  logger.info({ collegeId: id }, "CollegeService: getCollegeById - Init");
   const [college] = await sql<College[]>`
     SELECT * FROM colleges WHERE id = ${id} AND is_deleted = FALSE
   `;
-  return college || null;
+  const result = college || null;
+  logger.info({ collegeId: id, found: !!result }, "CollegeService: getCollegeById - Completion");
+  return result;
 }
 
 export async function updateCollege(id: string, data: Partial<College>): Promise<College | null> {
+  logger.info({ collegeId: id }, "CollegeService: updateCollege - Init");
   const updateData: any = { updated_at: sql`NOW()` };
   const columns: string[] = ["updated_at"];
 
@@ -85,12 +93,16 @@ export async function updateCollege(id: string, data: Partial<College>): Promise
     RETURNING *
   `;
 
+  logger.info({ collegeId: id, success: !!row }, "CollegeService: updateCollege - Completion");
   return row || null;
 }
 
 export async function deleteCollege(id: string): Promise<boolean> {
+  logger.info({ collegeId: id }, "CollegeService: deleteCollege - Init");
   const result = await sql`
     UPDATE colleges SET is_deleted = TRUE, updated_at = NOW() WHERE id = ${id}
   `;
-  return result.count > 0;
+  const success = result.count > 0;
+  logger.info({ collegeId: id, success }, "CollegeService: deleteCollege - Completion");
+  return success;
 }

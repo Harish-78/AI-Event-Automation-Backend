@@ -1,5 +1,6 @@
 import * as departmentService from "../department.service";
 import sql from "../../config/db.config";
+import { describe } from "node:test";
 
 describe("Department Service", () => {
     afterEach(() => {
