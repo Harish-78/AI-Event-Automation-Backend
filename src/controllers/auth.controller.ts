@@ -136,3 +136,26 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
     res.status(400).json({ error: message });
   }
 }
+export async function changePassword(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: "Current and new passwords are required" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      res.status(400).json({ error: "New password must be at least 8 characters" });
+      return;
+    }
+    const result = await authService.changePassword(userId, currentPassword, newPassword);
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Password change failed";
+    res.status(400).json({ error: message });
+  }
+}

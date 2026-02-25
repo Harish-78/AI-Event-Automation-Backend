@@ -37,12 +37,29 @@ export async function getMyRegistrations(req: Request, res: Response): Promise<v
   }
 }
 
+import * as eventService from "../services/event.service";
+
 export async function getEventRegistrations(req: Request, res: Response): Promise<void> {
   try {
+    const authReq = req as AuthRequest;
+    const { role, college_id: userCollegeId } = authReq.user!;
+    
     const { event_id: rawId } = req.params;
     const event_id = Array.isArray(rawId) ? rawId[0] : rawId;
     if (!event_id) {
       res.status(400).json({ error: "Event ID is required" });
+      return;
+    }
+
+    const event = await eventService.getEventById(event_id);
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
+      return;
+    }
+
+    // Role check: admin can only see their own college's event registrations
+    if (role === "admin" && event.college_id !== userCollegeId) {
+      res.status(403).json({ error: "Forbidden: Event belongs to another college" });
       return;
     }
 

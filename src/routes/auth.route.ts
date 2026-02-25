@@ -27,6 +27,7 @@ authRouter.get(
   authController.googleCallback
 );
 
+authRouter.post("/change-password", authenticate, authController.changePassword);
 authRouter.get("/me", authenticate, authController.me);
 authRouter.post("/logout", authController.logout);
 

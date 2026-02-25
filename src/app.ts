@@ -11,6 +11,7 @@ import collegeRoutes from "./routes/college.routes";
 import departmentRoutes from "./routes/department.routes";
 import eventRoutes from "./routes/event.routes";
 import registrationRoutes from "./routes/registration.routes";
+import notificationRoutes from "./routes/notification.routes";
 import healthRoutes from "./routes/health.route";
 import "./config/passport.config";
 
@@ -48,6 +49,7 @@ app.use("/api/colleges", collegeRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: "Not found" });

@@ -34,7 +34,9 @@ export async function getAllDepartments(params: {
     conditions.push(sql`(LOWER(name) LIKE ${searchTerm} OR LOWER(short_name) LIKE ${searchTerm})`);
   }
 
-  const whereClause = conditions.length > 0 ? sql`WHERE ${(sql as any).join(conditions, sql` AND `)}` : sql``;
+  const whereClause = conditions.length > 0 
+    ? sql`WHERE ${conditions.reduce((acc, cond) => sql`${acc} AND ${cond}`)}` 
+    : sql``;
 
   const [totalResult] = await sql<{ count: string }[]>`
     SELECT COUNT(*) FROM departments ${whereClause}
@@ -47,7 +49,7 @@ export async function getAllDepartments(params: {
     ORDER BY created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
-
+  logger.info({ count: departments.length, total }, "DepartmentService: getAllDepartments - Completion");
   return { departments, total };
 }
 
@@ -81,7 +83,7 @@ export async function updateDepartment(id: string, data: Partial<Department>): P
 
   const [row] = await sql<Department[]>`
     UPDATE departments SET
-      ${(sql as any)(updateData, columns)}
+      ${sql(updateData, columns)}
     WHERE id = ${id} AND is_deleted = FALSE
     RETURNING *
   `;

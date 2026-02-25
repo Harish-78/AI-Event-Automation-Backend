@@ -6,10 +6,12 @@ import { toUser } from "./auth.service";
 export async function updateUser({
   name,
   role,
+  college_id,
   userId,
 }: {
   name?: string;
   role?: string;
+  college_id?: string | null;
   userId: string;
 }): Promise<{ user: User; message: string }> {
   logger.info({ userId }, "UserService: updateUser - Init");
@@ -24,6 +26,10 @@ export async function updateUser({
     if (role) {
       updateData.role = role;
       columns.push("role");
+    }
+    if (college_id !== undefined) {
+      updateData.college_id = college_id;
+      columns.push("college_id");
     }
 
     const [row] = await sql<UserRow[]>`

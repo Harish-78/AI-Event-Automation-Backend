@@ -23,7 +23,7 @@ export async function updateProfile(
   }
 
   try {
-    const { id, name, role } = req.body;
+    const { id, name, role, college_id } = req.body;
     const isSuperAdmin = req.user.role === "superadmin";
 
     // Target user ID is either the provided ID (if Super Admin) or the current user's ID
@@ -40,14 +40,15 @@ export async function updateProfile(
       return;
     }
 
-    if (!name && !role) {
-      res.status(400).json({ error: "Name or role is required" });
+    if (!name && !role && college_id === undefined) {
+      res.status(400).json({ error: "Name, role, or college_id is required" });
       return;
     }
 
     const { user: updatedUser, message } = await updateUser({
       name,
       role,
+      college_id,
       userId: targetUserId,
     });
 

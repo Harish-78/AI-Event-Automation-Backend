@@ -253,3 +253,7 @@ export async function resetPassword(token: string, password: string): Promise<{ 
   
   return { message: "Password has been reset successfully. You can now log in with your new password." };
 }
+export function changePassword(userId: string, currentPassword: any, newPassword: any) {
+  throw new Error("Function not implemented.");
+}
+

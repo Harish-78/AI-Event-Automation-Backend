@@ -37,7 +37,9 @@ export async function getAllColleges(params: {
     whereConditions.push(sql`(LOWER(name) LIKE ${searchTerm} OR LOWER(short_name) LIKE ${searchTerm})`);
   }
 
-  const whereClause = whereConditions.length > 0 ? sql`WHERE ${(sql as any).join(whereConditions, sql` AND `)}` : sql``;
+  const whereClause = whereConditions.length > 0 
+    ? sql`WHERE ${whereConditions.reduce((acc, cond) => sql`${acc} AND ${cond}`)}` 
+    : sql``;
 
   const [totalResult] = await sql<{ count: string }[]>`
     SELECT COUNT(*) FROM colleges ${whereClause}
@@ -50,7 +52,7 @@ export async function getAllColleges(params: {
     ORDER BY created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
-
+  logger.info({ count: colleges.length, total }, "CollegeService: getAllColleges - Completion");
   return { colleges, total };
 }
 
@@ -88,7 +90,7 @@ export async function updateCollege(id: string, data: Partial<College>): Promise
 
   const [row] = await sql<College[]>`
     UPDATE colleges SET
-      ${(sql as any)(updateData, columns)}
+      ${sql(updateData, columns)}
     WHERE id = ${id} AND is_deleted = FALSE
     RETURNING *
   `;

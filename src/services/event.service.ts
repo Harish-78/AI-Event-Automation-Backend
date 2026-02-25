@@ -51,7 +51,9 @@ export async function getAllEvents(params: {
     conditions.push(sql`(LOWER(title) LIKE ${searchTerm} OR LOWER(description) LIKE ${searchTerm})`);
   }
 
-  const whereClause = conditions.length > 0 ? sql`WHERE ${(sql as any).join(conditions, sql` AND `)}` : sql``;
+  const whereClause = conditions.length > 0 
+    ? sql`WHERE ${conditions.reduce((acc, cond) => sql`${acc} AND ${cond}`)}` 
+    : sql``;
 
   const [totalResult] = await sql<{ count: string }[]>`
     SELECT COUNT(*) FROM events ${whereClause}
@@ -64,7 +66,7 @@ export async function getAllEvents(params: {
     ORDER BY start_time ASC 
     LIMIT ${limit} OFFSET ${offset}
   `;
-
+  logger.info({ count: events.length, total }, "EventService: getAllEvents - Completion");
   return { events, total };
 }
 
@@ -102,7 +104,7 @@ export async function updateEvent(id: string, data: Partial<Event>): Promise<Eve
 
   const [row] = await sql<Event[]>`
     UPDATE events SET 
-      ${(sql as any)(updateData, columns)}
+      ${sql(updateData, columns)}
     WHERE id = ${id} AND is_deleted = FALSE 
     RETURNING *
   `;
