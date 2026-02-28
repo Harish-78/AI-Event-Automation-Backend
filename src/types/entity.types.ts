@@ -45,3 +45,27 @@ export interface Event {
   created_at: string;
   updated_at: string;
 }
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string | null;
+  mjml_content: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  description: string | null;
+  template_id: string | null;
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+  scheduled_at: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+}
