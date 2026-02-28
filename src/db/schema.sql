@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS colleges (
   website_url TEXT,
   registration_number VARCHAR(100) UNIQUE,
   logo_url TEXT,
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   is_deleted BOOLEAN DEFAULT FALSE
@@ -30,6 +32,8 @@ CREATE TABLE IF NOT EXISTS departments (
   short_name VARCHAR(100) UNIQUE,
   contact_email VARCHAR(255),
   contact_phone VARCHAR(50),
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   is_deleted BOOLEAN DEFAULT FALSE
@@ -49,6 +53,8 @@ CREATE TABLE IF NOT EXISTS users (
   email_verified_at TIMESTAMPTZ,
   role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin','superadmin')),
   college_id UUID REFERENCES colleges(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   is_deleted BOOLEAN DEFAULT FALSE
@@ -83,6 +89,7 @@ CREATE TABLE IF NOT EXISTS events (
   registration_deadline TIMESTAMPTZ,
   max_participants INTEGER,
   created_by UUID NOT NULL REFERENCES users(id),
+  updated_by UUID REFERENCES users(id),
   status VARCHAR(50) DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'cancelled', 'completed')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),

@@ -7,12 +7,14 @@ export async function createDepartment(req: Request, res: Response): Promise<voi
     const authReq = req as AuthRequest;
     const { role, college_id: userCollegeId } = authReq.user!;
 
-    // If admin, force their own college_id
     if (role === "admin") {
       req.body.college_id = userCollegeId;
     }
 
-    const department = await departmentService.createDepartment(req.body);
+    const department = await departmentService.createDepartment({
+      ...req.body,
+      created_by: authReq.user?.id
+    });
     res.status(201).json({ department, message: "Department created successfully" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create department";
@@ -99,12 +101,10 @@ export async function updateDepartment(req: Request, res: Response): Promise<voi
       return;
     }
 
-    // Admins cannot change the college_id
-    if (role === "admin") {
-      delete req.body.college_id;
-    }
-
-    const department = await departmentService.updateDepartment(id, req.body);
+    const department = await departmentService.updateDepartment(id, {
+      ...req.body,
+      updated_by: authReq.user?.id
+    });
     res.json({ department, message: "Department updated successfully" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update department";

@@ -7,6 +7,12 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
     const authReq = req as AuthRequest;
     const { id: userId, role, college_id: userCollegeId } = authReq.user!;
 
+    // Superadmins cannot create events
+    if (role === "superadmin") {
+      res.status(403).json({ error: "Superadmins cannot create events" });
+      return;
+    }
+
     // If admin, force their own college_id
     if (role === "admin") {
       req.body.college_id = userCollegeId;
@@ -110,7 +116,10 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
       delete req.body.college_id;
     }
 
-    const event = await eventService.updateEvent(id, req.body);
+    const event = await eventService.updateEvent(id, {
+      ...req.body,
+      updated_by: (req as any).user?.id
+    });
     res.json({ event, message: "Event updated successfully" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to update event";

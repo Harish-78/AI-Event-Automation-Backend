@@ -13,6 +13,8 @@ export interface College {
   website_url: string | null;
   registration_number: string | null;
   logo_url: string | null;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +26,8 @@ export interface Department {
   short_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,7 +45,9 @@ export interface Event {
   registration_deadline: string | null;
   max_participants: number | null;
   created_by: string;
+  updated_by: string | null;
   status: 'draft' | 'published' | 'cancelled' | 'completed';
+  is_global: boolean;
   created_at: string;
   updated_at: string;
 }

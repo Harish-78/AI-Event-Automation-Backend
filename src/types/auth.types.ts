@@ -6,6 +6,8 @@ export interface User {
   email_verified_at: string | null;
   role: string;
   college_id: string | null;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +21,8 @@ export interface UserRow {
   email_verified_at: string | null;
   role: string;
   college_id: string | null;
+  created_by: string | null;
+  updated_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +52,8 @@ declare global {
       email_verified_at: string | null;
       role: string;
       college_id: string | null;
+      created_by: string | null;
+      updated_by: string | null;
       created_at: string;
       updated_at: string;
     }

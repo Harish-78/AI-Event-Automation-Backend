@@ -5,7 +5,10 @@ import { updateUser } from "../services/user.service";
 
 export async function createCollege(req: Request, res: Response): Promise<void> {
   try {
-    const college = await collegeService.createCollege(req.body);
+    const college = await collegeService.createCollege({
+      ...req.body,
+      created_by: (req as any).user?.id
+    });
 
     // If the creator is an Admin, associate them with the new college
     if (req.user && req.user.role === "admin") {
@@ -74,7 +77,10 @@ export async function updateCollege(req: Request, res: Response): Promise<void> 
       return;
     }
     const collegeId = Array.isArray(id) ? id[0] : id;
-    const college = await collegeService.updateCollege(collegeId!, req.body);
+    const college = await collegeService.updateCollege(collegeId!, {
+      ...req.body,
+      updated_by: (req as any).user?.id
+    });
     if (!college) {
       res.status(404).json({ error: "College not found or no updates provided" });
       return;

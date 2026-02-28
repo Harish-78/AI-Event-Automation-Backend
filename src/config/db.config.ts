@@ -9,11 +9,12 @@ if (!process.env.DATABASE_URL) {
 }
 
 const sql = postgres(process.env.DATABASE_URL!, {
-  ssl: {
-    rejectUnauthorized: false, // Required for Supabase/Neon/etc.
-  },
-  max: 1, // Limiting for serverless/Supabase free tier compatibility
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 30,
   onnotice: (notice) => logger.info({ notice }, "Database notice"),
+  ssl: "require", // Force SSL for Supabase connection
+  prepare: false, // Disable prepared statements for PgBouncer compatibility (port 6543)
 });
 
 logger.info("Database client initialized with postgres.js");

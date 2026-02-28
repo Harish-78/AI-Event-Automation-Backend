@@ -5,8 +5,13 @@ import { AuthRequest } from "../middleware/auth.middleware";
 export async function registerForEvent(req: Request, res: Response): Promise<void> {
   try {
     const authReq = req as AuthRequest;
-    const userId = authReq.user!.id;
+    const { id: userId, role } = authReq.user!;
     const { event_id } = req.body;
+
+    if (role === "superadmin" || role === "admin") {
+      res.status(403).json({ error: "Only users can register for events" });
+      return;
+    }
 
     if (!event_id) {
       res.status(400).json({ error: "Event ID is required" });

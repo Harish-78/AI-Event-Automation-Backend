@@ -6,8 +6,8 @@ export async function createDepartment(data: Partial<Department>): Promise<Depar
   logger.info({ departmentName: data.name, collegeId: data.college_id }, "DepartmentService: createDepartment - Init");
   const { name, college_id, short_name, contact_email, contact_phone } = data;
   const [row] = await sql<Department[]>`
-    INSERT INTO departments (name, college_id, short_name, contact_email, contact_phone)
-    VALUES (${name!}, ${college_id!}, ${short_name || null}, ${contact_email || null}, ${contact_phone || null})
+    INSERT INTO departments (name, college_id, short_name, contact_email, contact_phone, created_by)
+    VALUES (${name!}, ${college_id!}, ${short_name || null}, ${contact_email || null}, ${contact_phone || null}, ${(data as any).created_by || null})
     RETURNING *
   `;
   if (!row) throw new Error("Insert failed");
@@ -23,10 +23,9 @@ export async function getAllDepartments(params: {
 }): Promise<{ departments: Department[]; total: number }> {
   logger.info(params, "DepartmentService: getAllDepartments - Init");
   const { college_id, search, limit = 10, offset = 0 } = params;
-  const conditions: any[] = [sql`is_deleted = FALSE`];
-
+  const conditions: any[] = [sql`d.is_deleted = FALSE`];
   if (college_id) {
-    conditions.push(sql`college_id = ${college_id}`);
+    conditions.push(sql`d.college_id = ${college_id}`);
   }
 
   if (search) {
@@ -39,14 +38,19 @@ export async function getAllDepartments(params: {
     : sql``;
 
   const [totalResult] = await sql<{ count: string }[]>`
-    SELECT COUNT(*) FROM departments ${whereClause}
+    SELECT COUNT(*) FROM departments d ${whereClause}
   `;
   const total = parseInt(totalResult!.count, 10);
 
   const departments = await sql<Department[]>`
-    SELECT * FROM departments
+    SELECT d.*, 
+           u1.name as created_by_name, 
+           u2.name as updated_by_name
+    FROM departments d
+    LEFT JOIN users u1 ON d.created_by = u1.id
+    LEFT JOIN users u2 ON d.updated_by = u2.id
     ${whereClause}
-    ORDER BY created_at DESC
+    ORDER BY d.created_at DESC
     LIMIT ${limit} OFFSET ${offset}
   `;
   logger.info({ count: departments.length, total }, "DepartmentService: getAllDepartments - Completion");
@@ -65,8 +69,8 @@ export async function getDepartmentById(id: string): Promise<Department | null> 
 
 export async function updateDepartment(id: string, data: Partial<Department>): Promise<Department | null> {
   logger.info({ departmentId: id }, "DepartmentService: updateDepartment - Init");
-  const updateData: any = { updated_at: sql`NOW()` };
-  const columns = ["updated_at"];
+  const updateData: any = { updated_at: sql`NOW()`, updated_by: (data as any).updated_by || null };
+  const columns = ["updated_at", "updated_by"];
 
   const allowedFields = ["name", "short_name", "contact_email", "contact_phone", "college_id"];
 

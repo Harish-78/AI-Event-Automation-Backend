@@ -25,6 +25,8 @@ export function toUser(row: UserRow): User {
     email_verified_at: row.email_verified_at,
     role: row.role,
     college_id: row.college_id,
+    created_by: (row as any).created_by,
+    updated_by: (row as any).updated_by,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -46,7 +48,7 @@ export async function register(
   const [row0] = await sql<UserRow[]>`
     INSERT INTO users (email, password_hash, name, role)
     VALUES (${email.toLowerCase()}, ${passwordHash}, ${name || null}, 'user')
-    RETURNING id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at
+    RETURNING id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at
   `;
   if (!row0) throw new Error("Insert failed");
   const user = toUser(row0);
@@ -68,7 +70,7 @@ export async function login(
 ): Promise<{ user: User; accessToken: string }> {
   logger.info({ email }, "AuthService: login - Init");
   const [row] = await sql<UserRow[]>`
-    SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
+    SELECT id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at 
     FROM users WHERE email = ${email.toLowerCase()}
   `;
   if (!row) {
@@ -106,7 +108,7 @@ export async function verifyEmail(token: string): Promise<{ user: User; accessTo
   await sql`UPDATE users SET email_verified_at = NOW(), updated_at = NOW() WHERE id = ${user_id}`;
   await sql`DELETE FROM email_verification_tokens WHERE token = ${token}`;
   const [userRow] = await sql<UserRow[]>`
-    SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
+    SELECT id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at 
     FROM users WHERE id = ${user_id}
   `;
   if (!userRow) throw new Error("User not found");
@@ -147,7 +149,7 @@ export async function findOrCreateGoogleUser(
 ): Promise<{ user: User; accessToken: string }> {
   logger.info({ email, googleId }, "AuthService: findOrCreateGoogleUser - Init");
   const [existingUser] = await sql<UserRow[]>`
-    SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
+    SELECT id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at 
     FROM users WHERE google_id = ${googleId}
   `;
   if (existingUser) {
@@ -170,7 +172,7 @@ export async function findOrCreateGoogleUser(
       WHERE id = ${existingEmailUser.id}
     `;
     const [updatedRow] = await sql<UserRow[]>`
-      SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
+      SELECT id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at 
       FROM users WHERE id = ${existingEmailUser.id}
     `;
     if (!updatedRow) throw new Error("User not found");
@@ -182,7 +184,7 @@ export async function findOrCreateGoogleUser(
   const [insertRow] = await sql<UserRow[]>`
     INSERT INTO users (email, google_id, name, email_verified_at, role)
     VALUES (${email.toLowerCase()}, ${googleId}, ${name || null}, NOW(), 'user')
-    RETURNING id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at
+    RETURNING id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_at, updated_at
   `;
   if (!insertRow) throw new Error("Insert failed");
   const user = toUser(insertRow);
@@ -197,14 +199,23 @@ export function createTokenForUser(user: User): string {
 }
 
 export async function getUserById(id: string): Promise<User | null> {
+  if (!id) {
+    logger.warn("AuthService: getUserById - No ID provided");
+    return null;
+  }
   logger.info({ userId: id }, "AuthService: getUserById - Init");
-  const [row] = await sql<UserRow[]>`
-    SELECT id, email, password_hash, name, google_id, email_verified_at, role, created_at, updated_at 
-    FROM users WHERE id = ${id}
-  `;
-  const result = row ? toUser(row) : null;
-  logger.info({ userId: id, found: !!result }, "AuthService: getUserById - Completion");
-  return result;
+  try {
+    const [row] = await sql<UserRow[]>`
+      SELECT id, email, password_hash, name, google_id, email_verified_at, role, college_id, created_by, updated_by, created_at, updated_at 
+      FROM users WHERE id = ${id}
+    `;
+    const result = row ? toUser(row) : null;
+    logger.info({ userId: id, found: !!result }, "AuthService: getUserById - Completion");
+    return result;
+  } catch (err) {
+    logger.error({ err, userId: id }, "AuthService: getUserById - Error");
+    throw err; // Re-throw so the middleware can catch it
+  }
 }
 
 export async function requestPasswordReset(email: string): Promise<{ message: string }> {
