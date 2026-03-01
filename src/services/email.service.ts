@@ -5,9 +5,9 @@ const transporter: Transporter = nodemailer.createTransport({
   service: "gmail",
   auth: process.env.SMTP_USER
     ? {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      }
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    }
     : undefined,
 });
 
@@ -66,6 +66,27 @@ export async function sendPasswordResetEmail(
     logger.info({ to }, "Password reset email sent");
   } catch (err) {
     logger.error({ err, to }, "Failed to send password reset email");
+    throw err;
+  }
+}
+export async function sendCampaignEmail(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<void> {
+  logger.info({ to, subject }, "EmailService: sendCampaignEmail - Init");
+  const from =
+    process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
+  try {
+    await transporter.sendMail({
+      from: `"Event Automation" <${from}>`,
+      to,
+      subject,
+      html,
+    });
+    logger.info({ to }, "Campaign email sent");
+  } catch (err) {
+    logger.error({ err, to }, "Failed to send campaign email");
     throw err;
   }
 }

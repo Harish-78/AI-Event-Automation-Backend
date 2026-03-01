@@ -11,5 +11,6 @@ campaignRouter.get("/", authenticate, campaignController.getAllCampaigns);
 campaignRouter.get("/:id", authenticate, campaignController.getCampaignById);
 campaignRouter.put("/:id", authenticate, authorize("admin", "superadmin"), validate(updateCampaignSchema), campaignController.updateCampaign);
 campaignRouter.delete("/:id", authenticate, authorize("admin", "superadmin"), campaignController.deleteCampaign);
+campaignRouter.post("/:id/trigger", authenticate, authorize("admin", "superadmin"), campaignController.triggerCampaign);
 
 export default campaignRouter;

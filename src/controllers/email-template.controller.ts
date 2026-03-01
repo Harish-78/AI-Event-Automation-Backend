@@ -10,6 +10,7 @@ export async function createTemplate(req: Request, res: Response): Promise<void>
         const template = await templateService.createTemplate({
             ...req.body,
             created_by: userId,
+            college_id: authReq.user!.college_id!,
         });
         res.status(201).json({ template, message: "Email template created successfully" });
     } catch (error) {
@@ -30,6 +31,7 @@ export async function getAllTemplates(req: Request, res: Response): Promise<void
 
         const result = await templateService.getAllTemplates({
             ...(createdByFilter ? { created_by: createdByFilter } : {}),
+            college_id: authReq.user!.college_id || undefined,
             search: search as string,
             limit: limit ? parseInt(limit as string, 10) : 10,
             offset: offset ? parseInt(offset as string, 10) : 0,

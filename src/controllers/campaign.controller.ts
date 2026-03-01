@@ -10,6 +10,7 @@ export async function createCampaign(req: Request, res: Response): Promise<void>
         const campaign = await campaignService.createCampaign({
             ...req.body,
             created_by: userId,
+            college_id: authReq.user!.college_id!,
         });
         res.status(201).json({ campaign, message: "Campaign created successfully" });
     } catch (error) {
@@ -29,6 +30,7 @@ export async function getAllCampaigns(req: Request, res: Response): Promise<void
 
         const result = await campaignService.getAllCampaigns({
             ...(createdByFilter ? { created_by: createdByFilter } : {}),
+            college_id: authReq.user!.college_id || undefined,
             status: status as string,
             search: search as string,
             limit: limit ? parseInt(limit as string, 10) : 10,
@@ -92,3 +94,23 @@ export async function deleteCampaign(req: Request, res: Response): Promise<void>
         res.status(500).json({ error: message });
     }
 }
+
+export async function triggerCampaign(req: Request, res: Response): Promise<void> {
+    try {
+        const { id } = req.params;
+        const { targetEmails } = req.body;
+
+        const campaignId = id as string;
+        const success = await campaignService.triggerCampaign(campaignId, { targetEmails });
+
+        if (success) {
+            res.json({ message: "Campaign triggered successfully" });
+        } else {
+            res.status(500).json({ error: "Failed to trigger campaign via message queue" });
+        }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to trigger campaign";
+        res.status(400).json({ error: message });
+    }
+}
+

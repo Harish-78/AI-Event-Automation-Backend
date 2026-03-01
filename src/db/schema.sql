@@ -145,11 +145,14 @@ CREATE TABLE IF NOT EXISTS email_templates (
   name VARCHAR(255) NOT NULL,
   subject VARCHAR(255),
   mjml_content TEXT NOT NULL,
+  college_id UUID NOT NULL REFERENCES colleges(id) ON DELETE CASCADE,
   created_by UUID NOT NULL REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   is_deleted BOOLEAN DEFAULT FALSE
 );
+
+CREATE INDEX IF NOT EXISTS idx_email_templates_college_id ON email_templates(college_id);
 
 CREATE INDEX IF NOT EXISTS idx_email_templates_created_by ON email_templates(created_by);
 CREATE INDEX IF NOT EXISTS idx_email_templates_name ON email_templates(name);
@@ -162,11 +165,14 @@ CREATE TABLE IF NOT EXISTS campaigns (
   template_id UUID REFERENCES email_templates(id) ON DELETE SET NULL,
   status VARCHAR(50) DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'sending', 'sent', 'failed')),
   scheduled_at TIMESTAMPTZ,
+  college_id UUID NOT NULL REFERENCES colleges(id) ON DELETE CASCADE,
   created_by UUID NOT NULL REFERENCES users(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   is_deleted BOOLEAN DEFAULT FALSE
 );
+
+CREATE INDEX IF NOT EXISTS idx_campaigns_college_id ON campaigns(college_id);
 
 CREATE INDEX IF NOT EXISTS idx_campaigns_template_id ON campaigns(template_id);
 CREATE INDEX IF NOT EXISTS idx_campaigns_status ON campaigns(status);

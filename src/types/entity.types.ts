@@ -51,6 +51,7 @@ export interface EmailTemplate {
   name: string;
   subject: string | null;
   mjml_content: string;
+  college_id: string;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -64,6 +65,7 @@ export interface Campaign {
   template_id: string | null;
   status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
   scheduled_at: string | null;
+  college_id: string;
   created_by: string;
   created_at: string;
   updated_at: string;

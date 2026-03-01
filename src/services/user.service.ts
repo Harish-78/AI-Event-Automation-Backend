@@ -83,3 +83,21 @@ export const deleteUserById = async (userId: string) => {
     throw new Error(message);
   }
 };
+
+export const getUsersByCollege = async (collegeId: string) => {
+  logger.info({ collegeId }, "UserService: getUsersByCollege - Init");
+  try {
+    const users = await sql<UserRow[]>`
+      SELECT id, email, name, role, college_id FROM users 
+      WHERE college_id = ${collegeId} AND is_deleted = FALSE 
+      AND email_verified_at IS NOT NULL
+    `;
+    const result = users.map(toUser);
+    logger.info({ collegeId, count: result.length }, "UserService: getUsersByCollege - Completion");
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch users by college";
+    throw new Error(message);
+  }
+};
+
