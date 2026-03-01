@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as campaignService from "../services/campaign.service";
 import { AuthRequest } from "../middleware/auth.middleware";
+import { logger } from "../logger/logger";
 
 export async function createCampaign(req: Request, res: Response): Promise<void> {
     try {
@@ -71,7 +72,17 @@ export async function updateCampaign(req: Request, res: Response): Promise<void>
         const { id: userId, role } = authReq.user!;
         const { id } = req.params;
         const campaignId = id as string;
+        
         const campaign = await campaignService.updateCampaign(campaignId, req.body);
+        
+        // If status is updated to sending, trigger execution
+        if (req.body.status === "sending") {
+            // Execute in background
+            campaignService.executeCampaign(campaignId).catch(err => {
+                logger.error({ err, campaignId }, "Background campaign execution failed");
+            });
+        }
+
         res.json({ campaign, message: "Campaign updated successfully" });
     } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to update campaign";

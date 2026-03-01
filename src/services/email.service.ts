@@ -69,3 +69,27 @@ export async function sendPasswordResetEmail(
     throw err;
   }
 }
+
+export async function sendEmail({
+  to,
+  subject,
+  html,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const from = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
+  try {
+    await transporter.sendMail({
+      from: `"Event Automation" <${from}>`,
+      to,
+      subject,
+      html,
+    });
+    logger.info({ to, subject }, "Email sent successfully");
+  } catch (err) {
+    logger.error({ err, to, subject }, "Failed to send email");
+    throw err;
+  }
+}

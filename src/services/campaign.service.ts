@@ -1,6 +1,9 @@
 import sql from "../config/db.config";
 import { logger } from "../logger/logger";
-import type { Campaign } from "../types/entity.types";
+import type { Campaign, EmailTemplate } from "../types/entity.types";
+import { getTemplateById } from "./email-template.service";
+import mjml2html from "mjml";
+import { queueEmail } from "./mail.producer";
 
 export async function createCampaign(data: Partial<Campaign>): Promise<Campaign> {
     logger.info({ name: data.name }, "CampaignService: createCampaign - Init");
@@ -105,4 +108,67 @@ export async function deleteCampaign(id: string): Promise<boolean> {
     const success = result.count > 0;
     logger.info({ campaignId: id, success }, "CampaignService: deleteCampaign - Completion");
     return success;
+}
+
+export async function executeCampaign(campaignId: string): Promise<void> {
+    logger.info({ campaignId }, "CampaignService: executeCampaign - Init");
+    try {
+        const campaign = await getCampaignById(campaignId);
+        if (!campaign || !campaign.template_id) {
+            throw new Error("Campaign or template not found");
+        }
+
+        const template = await getTemplateById(campaign.template_id);
+        if (!template) {
+            throw new Error("Email template not found");
+        }
+
+        // Update status to sending
+        await updateCampaign(campaignId, { status: "sending" });
+
+        // Compile MJML to HTML
+        const { html: compiledHtml } = mjml2html(template.mjml_content);
+
+        // Fetch users to send email to
+        // For now, let's say we send to all users of the same college as the campaign creator
+        // or all users if superadmin.
+        const [creator] = await sql<{ role: string; college_id: string }[]>`
+            SELECT role, college_id FROM users WHERE id = ${campaign.created_by}
+        `;
+        
+        if (!creator) throw new Error("Campaign creator not found");
+
+        let users;
+        if (creator.role === "superadmin") {
+            users = await sql<{ email: string; name: string }[]>`
+                SELECT email, name FROM users WHERE is_deleted = FALSE
+            `;
+        } else {
+            users = await sql<{ email: string; name: string }[]>`
+                SELECT email, name FROM users WHERE college_id = ${creator.college_id} AND is_deleted = FALSE
+            `;
+        }
+
+        logger.info({ campaignId, userCount: users.length }, "CampaignService: executeCampaign - Queuing emails");
+
+        for (const user of users) {
+            // Basic placeholder substitution
+            let userHtml = compiledHtml.replace(/\{\{name\}\}/g, user.name || "User");
+            
+            await queueEmail({
+                to: user.email,
+                subject: template.subject || campaign.name,
+                html: userHtml
+            });
+        }
+
+        // Update status to sent
+        await updateCampaign(campaignId, { status: "sent" });
+        logger.info({ campaignId }, "CampaignService: executeCampaign - Completion");
+
+    } catch (error) {
+        logger.error({ error, campaignId }, "CampaignService: executeCampaign - Failed");
+        await updateCampaign(campaignId, { status: "failed" });
+        throw error;
+    }
 }
