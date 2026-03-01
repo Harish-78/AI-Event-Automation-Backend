@@ -58,7 +58,7 @@ export async function sendToQueue(queue: string, data: any): Promise<boolean> {
 export async function consumeQueue(queue: string, onMessage: (msg: any) => Promise<void>) {
     try {
         const { channel: chan } = await connectRabbitMQ();
-        await chan.prefetch(1); // Process one at a time
+        await chan.prefetch(1); 
 
         logger.info({ queue }, "RabbitMQ: Starting consumer");
 
